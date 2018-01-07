@@ -36,7 +36,6 @@
 #include <X11/XF86keysym.h>
 
 #include <poll.h>
-#include <assert.h>
 
 /*****************************************************************************
  * Local prototypes
@@ -178,12 +177,6 @@ static unsigned GetModifier( xcb_connection_t *p_connection, xcb_key_symbols_t *
         XCB_MOD_MASK_1, XCB_MOD_MASK_2, XCB_MOD_MASK_3,
         XCB_MOD_MASK_4, XCB_MOD_MASK_5
     };
-#if 1
-    if (sym == XK_Shift_L || sym == XK_Shift_R)
-    {
-        return XCB_MOD_MASK_SHIFT;
-    }
-#endif
 
     if( sym == 0 )
         return 0; /* no modifier */
@@ -362,16 +355,9 @@ static void Register( intf_thread_t *p_intf )
         const hotkey_mapping_t *p_map = &p_sys->p_map[i];
         for( int j = 0; p_map->p_keys[j] != XCB_NO_SYMBOL; j++ )
         {
-             xcb_generic_error_t * ret = xcb_request_check(p_sys->p_connection, xcb_grab_key_checked( p_sys->p_connection, true, p_sys->root,
+            xcb_grab_key( p_sys->p_connection, true, p_sys->root,
                           p_map->i_modifier, p_map->p_keys[j],
-                          XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC ));
-             if (ret)
-             {
-                 printf("%p\n", ret);
-#if 0
-                 assert(0);
-#endif
-             }
+                          XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC );
         }
     }
 }
