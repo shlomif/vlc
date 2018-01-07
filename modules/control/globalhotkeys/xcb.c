@@ -36,6 +36,7 @@
 #include <X11/XF86keysym.h>
 
 #include <poll.h>
+#include <assert.h>
 
 /*****************************************************************************
  * Local prototypes
@@ -177,6 +178,12 @@ static unsigned GetModifier( xcb_connection_t *p_connection, xcb_key_symbols_t *
         XCB_MOD_MASK_1, XCB_MOD_MASK_2, XCB_MOD_MASK_3,
         XCB_MOD_MASK_4, XCB_MOD_MASK_5
     };
+#if 1
+    if (sym == XK_Shift_L || sym == XK_Shift_R)
+    {
+        return XCB_MOD_MASK_SHIFT;
+    }
+#endif
 
     if( sym == 0 )
         return 0; /* no modifier */
@@ -241,10 +248,16 @@ static unsigned GetX11Modifier( xcb_connection_t *p_connection,
         i_mask |= GetModifier( p_connection, p_symbols, XK_Control_L ) |
                   GetModifier( p_connection, p_symbols, XK_Control_R );
     if( i_vlc & KEY_MODIFIER_META )
-        i_mask |= GetModifier( p_connection, p_symbols, XK_Meta_L ) |
+        i_mask |=
+                  GetModifier( p_connection, p_symbols, XK_Super_L ) |
+#if 0
+            GetModifier( p_connection, p_symbols, XK_Meta_L ) |
                   GetModifier( p_connection, p_symbols, XK_Meta_R ) |
                   GetModifier( p_connection, p_symbols, XK_Super_L ) |
                   GetModifier( p_connection, p_symbols, XK_Super_R );
+#else
+    0;
+#endif
     return i_mask;
 }
 
@@ -349,9 +362,16 @@ static void Register( intf_thread_t *p_intf )
         const hotkey_mapping_t *p_map = &p_sys->p_map[i];
         for( int j = 0; p_map->p_keys[j] != XCB_NO_SYMBOL; j++ )
         {
-            xcb_grab_key( p_sys->p_connection, true, p_sys->root,
+             xcb_generic_error_t * ret = xcb_request_check(p_sys->p_connection, xcb_grab_key_checked( p_sys->p_connection, true, p_sys->root,
                           p_map->i_modifier, p_map->p_keys[j],
-                          XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC );
+                          XCB_GRAB_MODE_ASYNC, XCB_GRAB_MODE_ASYNC ));
+             if (ret)
+             {
+                 printf("%p\n", ret);
+#if 0
+                 assert(0);
+#endif
+             }
         }
     }
 }
