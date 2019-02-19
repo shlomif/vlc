@@ -50,11 +50,10 @@ struct vlc_logger_t
     void *sys;
 };
 
-static void vlc_vaLogCallback(libvlc_int_t *vlc, int type,
+static void vlc_vaLogCallback(vlc_logger_t *logger, int type,
                               const vlc_log_t *item, const char *format,
                               va_list ap)
 {
-    vlc_logger_t *logger = libvlc_priv(vlc)->logger;
     int canc;
 
     assert(logger != NULL);
@@ -65,13 +64,13 @@ static void vlc_vaLogCallback(libvlc_int_t *vlc, int type,
     vlc_restorecancel(canc);
 }
 
-static void vlc_LogCallback(libvlc_int_t *vlc, int type, const vlc_log_t *item,
-                            const char *format, ...)
+static void vlc_LogCallback(vlc_logger_t *logger, int type,
+                            const vlc_log_t *item, const char *format, ...)
 {
     va_list ap;
 
     va_start(ap, format);
-    vlc_vaLogCallback(vlc, type, item, format, ap);
+    vlc_vaLogCallback(logger, type, item, format, ap);
     va_end(ap);
 }
 
@@ -88,6 +87,8 @@ void vlc_vaLog (vlc_object_t *obj, int type, const char *module,
                 const char *file, unsigned line, const char *func,
                 const char *format, va_list args)
 {
+    vlc_logger_t *logger = libvlc_priv(vlc_object_instance(obj))->logger;
+
     if (obj != NULL && obj->obj.flags & OBJECT_FLAGS_QUIET)
         return;
 
@@ -135,7 +136,7 @@ void vlc_vaLog (vlc_object_t *obj, int type, const char *module,
 
     /* Pass message to the callback */
     if (obj != NULL)
-        vlc_vaLogCallback(vlc_object_instance(obj), type, &msg, format, args);
+        vlc_vaLogCallback(logger, type, &msg, format, args);
 }
 
 /**
@@ -254,12 +255,11 @@ static void vlc_LogEarlyClose(void *d)
 {
     vlc_logger_early_t *sys = d;
     vlc_logger_t *logger = sys->sink;
-    libvlc_int_t *vlc = vlc_object_instance(logger);
 
     /* Drain early log messages */
     for (vlc_log_early_t *log = sys->head, *next; log != NULL; log = next)
     {
-        vlc_LogCallback(vlc, log->type, &log->meta, "%s",
+        vlc_LogCallback(logger, log->type, &log->meta, "%s",
                         (log->msg != NULL) ? log->msg : "message lost");
         free(log->msg);
         next = log->next;
