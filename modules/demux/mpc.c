@@ -223,8 +223,7 @@ static int Demux( demux_t *p_demux )
     block_t     *p_data;
     int i_ret;
 
-    p_data = block_New( p_demux,
-                        MPC_DECODER_BUFFER_LENGTH*sizeof(MPC_SAMPLE_FORMAT) );
+    p_data = block_Alloc( MPC_DECODER_BUFFER_LENGTH*sizeof(MPC_SAMPLE_FORMAT) );
     if( !p_data )
         return VLC_DEMUXER_EGENERIC;
 
@@ -258,7 +257,7 @@ static int Demux( demux_t *p_demux )
 static int Control( demux_t *p_demux, int i_query, va_list args )
 {
     demux_sys_t *p_sys = p_demux->p_sys;
-    double   f, *pf;
+    double   f;
     vlc_tick_t i64;
     vlc_tick_t *pi64;
     bool *pb_bool;
@@ -279,12 +278,9 @@ static int Control( demux_t *p_demux, int i_query, va_list args )
             return VLC_SUCCESS;
 
         case DEMUX_GET_POSITION:
-            pf = va_arg( args, double * );
             pi64 = (int64_t*)va_arg( args, int64_t * );
             *pi64 = INT64_C(1000000) * p_sys->info.pcm_samples /
                         p_sys->info.sample_freq;
-            else
-                *pf = 0.0;
             return VLC_SUCCESS;
 
         case DEMUX_GET_TIME:
@@ -304,7 +300,7 @@ static int Control( demux_t *p_demux, int i_query, va_list args )
 
         case DEMUX_SET_TIME:
         {
-            vlc_tick_t i64 = va_arg( args, vlc_tick_t );
+            i64 = va_arg( args, vlc_tick_t );
             if( mpc_decoder_seek_sample( &p_sys->decoder, i64 ) )
             {
                 p_sys->i_position = i64;
